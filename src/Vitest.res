@@ -1080,6 +1080,8 @@ module Matchers = (
   module Array = {
     @send external toContain: (expected<array<'a>>, 'a) => Config.return<'a> = "toContain"
 
+    @send external toContainEqual: (expected<array<'a>>, 'a) => Config.return<'a> = "toContainEqual"
+
     @send external toHaveLength: (expected<array<'a>>, int) => Config.return<'a> = "toHaveLength"
 
     @send external toMatch: (expected<array<'a>>, array<'a>) => Config.return<'a> = "toMatchObject"

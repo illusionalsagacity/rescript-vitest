@@ -272,20 +272,24 @@ describe("Expect", () => {
             expect(["hello", "world"])->Expect.Array.toContain("world")
             expect([true, false])->Expect.Array.toContain(false)
             expect([1, 2, 3])->Expect.not->Expect.Array.toContain(4)
+            let one = {"foo": 1}
+            let two = {"foo": 2}
+            expect([one, two])->Expect.Array.toContain(one)
+            expect([one, two])->Expect.Array.toContain(two)
           },
         )
 
-        /*
-      test(
-        "toContainEqual",
-        _t => {
-          expect([1, 2, 3])->Expect.Array.toContainEqual(2)
-          expect(["hello", "world"])->Expect.Array.toContainEqual("world")
-          expect([true, false])->Expect.Array.toContainEqual(false)
-          expect([1, 2, 3])->Expect.not->Expect.Array.toContainEqual(4)
-        },
-      )
- */
+        test(
+          "toContainEqual",
+          _t => {
+            expect([1, 2, 3])->Expect.Array.toContainEqual(2)
+            expect(["hello", "world"])->Expect.Array.toContainEqual("world")
+            expect([true, false])->Expect.Array.toContainEqual(false)
+            expect([1, 2, 3])->Expect.not->Expect.Array.toContainEqual(4)
+            expect([{"foo": 1}, {"foo": 2}])->Expect.Array.toContainEqual({"foo": 1})
+            expect([{"foo": 1}, {"foo": 2}])->Expect.Array.toContainEqual({"foo": 2})
+          },
+        )
 
         test(
           "toHaveLength",
