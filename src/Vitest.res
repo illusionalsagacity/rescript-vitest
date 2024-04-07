@@ -958,11 +958,54 @@ let afterEachPromise = (~timeout=?, callback) =>
   afterEachPromise(callback, timeout->Js.Undefined.fromOption)
 
 @module("vitest")
+external afterAll: (unit => 'a, Js.Undefined.t<int>) => unit = "afterAll"
+
+@inline
+let afterAll = (~timeout=?, callback) => afterAll(callback, timeout->Js.Undefined.fromOption)
+
+@module("vitest")
 external afterAllPromise: (@uncurry (unit => promise<'a>), Js.Undefined.t<int>) => unit = "afterAll"
 
 @inline
 let afterAllPromise = (~timeout=?, callback) =>
   afterAllPromise(callback, timeout->Js.Undefined.fromOption)
+
+type benchmarkResult = {
+  name: string,
+  rank: int,
+  error?: unknown,
+  totalTime: float,
+  min: float,
+  max: float,
+  hz: float,
+  period: float,
+  samples: array<float>,
+  mean: float,
+  variance: float,
+  sd: float,
+  sem: float,
+  df: float,
+  critical: float,
+  moe: float,
+  rme: float,
+  p75: float,
+  p99: float,
+  p995: float,
+  p999: float,
+}
+type taskResult = {bechmark?: benchmarkResult}
+
+/**
+ @since(vitest >= 1.3.0)
+ */
+@module("vitest")
+external onTestFinished: (taskResult => unit) => unit = "onTestFinished"
+
+/**
+ @since(vitest >= 1.3.0)
+ */
+@module("vitest")
+external onTestFailed: (taskResult => unit) => unit = "onTestFailed"
 
 module Matchers = (
   Config: {
@@ -1143,6 +1186,10 @@ module Assert = {
 
   %%private(@module("vitest") @val external assert_obj: t = "assert")
 
+  @module("vitest")
+  external assert_: (bool, Js.undefined<string>) => unit = "assert"
+  let assert_ = (~message=?, value) => assert_(value, message->Js.Undefined.fromOption)
+
   @send external equal: (t, 'a, 'a, Js.undefined<string>) => unit = "equal"
 
   @inline
@@ -1158,34 +1205,143 @@ module Assert = {
 module Vi = {
   type t
 
-  %%private(@module("vitest") @val external vi_obj: t = "vi")
+  @module("vitest") @scope("vi")
+  external advanceTimersByTime: int => t = "advanceTimersByTime"
 
-  @send external advanceTimersByTime: (t, int) => t = "advanceTimersByTime"
-  @inline let advanceTimersByTime = ms => vi_obj->advanceTimersByTime(ms)
+  @module("vitest") @scope("vi")
+  external advanceTimersByTimeAsync: int => promise<t> = "advanceTimersByTimeAsync"
 
-  @send external advanceTimersToNextTimer: t => t = "advanceTimersToNextTimer"
-  @inline let advanceTimersToNextTimer = () => vi_obj->advanceTimersToNextTimer
+  @module("vitest") @scope("vi")
+  external advanceTimersToNextTimer: unit => t = "advanceTimersToNextTimer"
 
-  @send external runAllTimers: t => t = "runAllTimers"
-  @inline let runAllTimers = () => vi_obj->runAllTimers
+  @module("vitest") @scope("vi")
+  external advanceTimersToNextTimerAsync: unit => promise<t> = "advanceTimersToNextTimerAsync"
 
-  @send external runOnlyPendingTimers: t => t = "runOnlyPendingTimers"
-  @inline let runOnlyPendingTimers = () => vi_obj->runOnlyPendingTimers
+  @module("vitest") @scope("vi")
+  external getTimerCount: unit => int = "getTimerCount"
 
-  @send external useFakeTimers: t => t = "useFakeTimers"
-  @inline let useFakeTimers = () => vi_obj->useFakeTimers
+  @module("vitest") @scope("vi")
+  external clearAllTimers: unit => t = "clearAllTimers"
 
-  @send external useRealTimers: t => t = "useRealTimers"
-  @inline let useRealTimers = () => vi_obj->useRealTimers
+  @module("vitest") @scope("vi")
+  external runAllTicks: unit => t = "runAllTicks"
 
-  @send external mockCurrentDate: (t, Js.Date.t) => t = "mockCurrentDate"
-  @inline let mockCurrentDate = date => vi_obj->mockCurrentDate(date)
+  @module("vitest") @scope("vi") external runAllTimers: unit => t = "runAllTimers"
 
-  @send external restoreCurrentDate: (t, Js.Date.t) => t = "restoreCurrentDate"
-  @inline let restoreCurrentDate = date => vi_obj->restoreCurrentDate(date)
+  @module("vitest") @scope("vi")
+  external runAllTimersAsync: unit => promise<t> = "runAllTimersAsync"
 
-  @send external getMockedDate: t => Js.null<Js.Date.t> = "getMockedDate"
-  @inline let getMockedDate = () => vi_obj->getMockedDate->Js.Null.toOption
+  @module("vitest") @scope("vi") external runOnlyPendingTimers: unit => t = "runOnlyPendingTimers"
+
+  @module("vitest") @scope("vi")
+  external runOnlyPendingTimersAsync: unit => promise<t> = "runOnlyPendingTimersAsync"
+
+  @module("vitest") @scope("vi")
+  external setSystemTime: @unwrap [#Date(Js.Date.t) | #String(string) | #Int(int)] => t =
+    "setSystemTime"
+
+  /**
+   https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/sinonjs__fake-timers/index.d.ts
+   */
+  type fakeTimersConfig = {
+    now?: Js.Date.t, // or int
+    toFake?: array<string>,
+    loopLimit?: int,
+    shouldAdvanceTime?: bool,
+    advanceTimeDelta?: int,
+    shouldClearNativeTimers?: bool,
+  }
+
+  @module("vitest") @scope("vi")
+  external useFakeTimers: (~config: fakeTimersConfig=?, unit) => t = "useFakeTimers"
+
+  @module("vitest") @scope("vi")
+  external useRealTimers: unit => t = "useRealTimers"
+
+  @module("vitest") @scope("vi")
+  external isFakeTimers: unit => bool = "isFakeTimers"
+
+  @return(nullable) @scope("vi") @module("vitest")
+  external getMockedSystemTime: unit => option<Js.Date.t> = "getMockedSystemTime"
+
+  @scope("vi") @module("vitest")
+  external getRealSystemTime: unit => float = "getRealSystemTime"
+
+  type waitForOptions = {
+    timeout?: int,
+    interval?: int,
+  }
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  @module("vitest")
+  @scope("vi")
+  external waitFor: (unit => 'a, ~options: waitForOptions=?) => promise<'a> = "waitFor"
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  let waitFor = (callback, ~timeout=?, ~interval=?, ()) =>
+    waitFor(callback, ~options={?timeout, ?interval})
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  @module("vitest")
+  @scope("vi")
+  external waitForAsync: (unit => promise<'a>, ~options: waitForOptions=?) => promise<'a> =
+    "waitFor"
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  let waitForAsync = (callback, ~timeout=?, ~interval=?, ()) =>
+    waitForAsync(callback, ~options={?timeout, ?interval})
+
+  type waitUntilOptions = {
+    timeout?: int,
+    interval?: int,
+  }
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  @module("vitest")
+  @scope("vi")
+  external waitUntil: (unit => 'a, ~options: waitUntilOptions=?) => promise<'a> = "waitUntil"
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  let waitUntil = (callback, ~timeout=?, ~interval=?, ()) =>
+    waitUntil(callback, ~options={?timeout, ?interval})
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  @module("vitest")
+  @scope("vi")
+  external waitUntilAsync: (unit => promise<'a>, ~options: waitUntilOptions=?) => promise<'a> =
+    "waitUntil"
+
+  /**
+  @since(vitest >= 0.34.5)
+   */
+  let waitUntilAsync = (callback, ~timeout=?, ~interval=?, ()) =>
+    waitUntilAsync(callback, ~options={?timeout, ?interval})
+
+  @module("vitest") @scope("vi")
+  external hoisted: (unit => 'a) => 'a = "hoisted"
+
+  /*
+  @module("vitest")
+  @scope("vi")
+  external setConfig: config => unit = "setConfig"
+ */
+
+  @module("vitest") @scope("vi")
+  external resetConfig: unit => unit = "resetConfig"
 }
 
 @scope("import.meta") @val
